@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>みんまちPJ 会員属性ダッシュボード｜比較モード</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --obayashi-green:#00913A; --obayashi-green-dark:#00702D; --obayashi-green-light:#4FBB7A;
+  --obayashi-accent:#8DC63F; --blue:#0067B9; --blue-light:#5AA8E0;
+  --ink:#1b2a22; --sub:#5c6b63; --bg:#f4f7f5; --card:#ffffff; --line:#e3ebe6;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;background:var(--bg);color:var(--ink);}
+.header{background:linear-gradient(120deg,var(--obayashi-green-dark) 0%,var(--obayashi-green) 55%,var(--obayashi-accent) 130%);
+  color:#fff;padding:30px 40px 26px;position:relative;overflow:hidden;}
+.header::after{content:"";position:absolute;right:-60px;top:-60px;width:260px;height:260px;background:rgba(255,255,255,.08);border-radius:50%;}
+.header .brand{display:flex;align-items:center;gap:14px;position:relative;z-index:1;}
+.header .logo{width:44px;height:44px;border-radius:10px;background:#fff;color:var(--obayashi-green);
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;box-shadow:0 4px 14px rgba(0,0,0,.18);}
+.header h1{margin:0;font-size:24px;letter-spacing:.04em;position:relative;z-index:1;}
+.header p{margin:8px 0 0;opacity:.92;font-size:14px;position:relative;z-index:1;}
+.tabs{position:absolute;top:24px;right:34px;z-index:2;display:flex;gap:8px;}
+.tabs a{display:inline-block;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:700;text-decoration:none;color:#fff;border:1.5px solid rgba(255,255,255,.6);transition:.15s;}
+.tabs a.active{background:#fff;color:var(--obayashi-green-dark);border-color:#fff;}
+.tabs a:hover{background:rgba(255,255,255,.2);}
+.tabs a.active:hover{background:#fff;}
+.wrap{max-width:1280px;margin:0 auto;padding:26px 24px 60px;}
+.ab-row{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px;}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:0 2px 10px rgba(0,50,20,.05);position:relative;}
+.panel.a{border-top:5px solid var(--obayashi-green);}
+.panel.b{border-top:5px solid var(--blue);}
+.panel .tag{display:inline-flex;align-items:center;gap:8px;font-size:15px;font-weight:800;margin-bottom:14px;}
+.panel .badge{width:26px;height:26px;border-radius:8px;color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px;}
+.panel.a .badge{background:var(--obayashi-green);}
+.panel.b .badge{background:var(--blue);}
+.panel .count{margin-left:10px;font-size:13px;font-weight:600;color:var(--sub);}
+.panel .count .warnpill{display:none;margin-left:8px;background:#fff4e0;color:#8a5a12;border:1px solid #f3ce88;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;}
+.filters{display:flex;gap:12px;flex-wrap:wrap;}
+.filter-item{display:flex;flex-direction:column;gap:5px;}
+.filter-item .fl-title{font-size:11px;font-weight:700;color:var(--sub);}
+.panel select{appearance:none;-webkit-appearance:none;font-size:13px;font-weight:600;color:var(--ink);padding:8px 32px 8px 12px;border:2px solid var(--line);border-radius:9px;min-width:150px;cursor:pointer;
+  background:#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235c6b63' stroke-width='3'><path d='M6 9l6 6 6-6'/></svg>") no-repeat right 10px center;}
+.panel.a select:focus{border-color:var(--obayashi-green);outline:none;}
+.panel.b select:focus{border-color:var(--blue);outline:none;}
+.toolbar{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+.toggle{display:inline-flex;border:2px solid var(--obayashi-green);border-radius:10px;overflow:hidden;}
+.toggle button{border:none;background:#fff;color:var(--obayashi-green-dark);font-size:13px;font-weight:700;padding:9px 16px;cursor:pointer;}
+.toggle button.on{background:var(--obayashi-green);color:#fff;}
+.toolbar .right{display:flex;gap:10px;}
+.btn{border:none;border-radius:10px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;transition:.15s;}
+.btn-reset{background:#eef3f0;color:var(--sub);}
+.btn-reset:hover{background:#e0e8e3;}
+.btn-csv{background:var(--obayashi-green);color:#fff;box-shadow:0 3px 10px rgba(0,145,58,.3);}
+.btn-csv:hover{background:var(--obayashi-green-dark);}
+.warn-banner{display:none;align-items:center;gap:10px;background:#fff4e0;border:1px solid #f3ce88;color:#8a5a12;border-radius:12px;padding:12px 18px;margin-bottom:18px;font-size:13px;line-height:1.6;}
+.legend{display:flex;gap:22px;justify-content:center;margin:2px 0 20px;font-size:13px;font-weight:700;flex-wrap:wrap;}
+.legend .k{display:inline-flex;align-items:center;gap:7px;}
+.legend .sw{width:16px;height:16px;border-radius:4px;}
+.legend .sw.a{background:var(--obayashi-green);}
+.legend .sw.b{background:var(--blue);}
+.legend .name{color:var(--sub);font-weight:600;}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:20px;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 24px 26px;box-shadow:0 2px 12px rgba(0,50,20,.05);}
+.card.col-6{grid-column:span 6;}
+.card.col-12{grid-column:span 12;}
+.card h2{margin:0 0 14px;font-size:17px;display:flex;align-items:center;gap:10px;}
+.card h2 .dot{width:11px;height:11px;border-radius:3px;background:var(--obayashi-green);}
+.card h2 .badge-mode{margin-left:auto;font-size:11px;font-weight:700;color:var(--sub);background:#f0f4f2;border-radius:20px;padding:3px 10px;}
+.chart-box{position:relative;width:100%;}
+.footer{margin-top:34px;text-align:center;font-size:12px;color:var(--sub);}
+.status{max-width:1200px;margin:20px auto;padding:18px 22px;border-radius:14px;background:#fff8e6;border:1px solid #f0d98a;color:#7a5a10;font-size:14px;line-height:1.7;}
+.status code{background:#fdeecb;padding:2px 6px;border-radius:5px;}
+.reload-btn{display:inline-block;margin-left:8px;padding:4px 12px;border:none;border-radius:8px;background:#fff;color:var(--obayashi-green-dark);font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.15);}
+@media(max-width:900px){.ab-row{grid-template-columns:1fr;}.card.col-6{grid-column:span 12;}.tabs{position:static;margin-top:14px;}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="tabs">
+    <a href="index.html">単一ビュー</a>
+    <a href="compare.html" class="active">比較モード</a>
+  </div>
+  <div class="brand">
+    <div class="logo">大</div>
+    <div><h1>みんまちPJ 会員属性ダッシュボード｜比較モード</h1></div>
+  </div>
+  <p>グループA と グループB を別々に絞り込んで、属性の傾向を並べて比較できます。</p>
+</div>
+
+<div class="wrap">
+  <div class="ab-row">
+    <div class="panel a">
+      <div class="tag"><span class="badge">A</span>グループ A
+        <span class="count" id="countA">0名<span class="warnpill" id="warnA">参考値</span></span></div>
+      <div class="filters" id="filtersA"></div>
+    </div>
+    <div class="panel b">
+      <div class="tag"><span class="badge">B</span>グループ B
+        <span class="count" id="countB">0名<span class="warnpill" id="warnB">参考値</span></span></div>
+      <div class="filters" id="filtersB"></div>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <div class="toggle" id="modeToggle">
+      <button data-mode="count" class="on">件数</button>
+      <button data-mode="percent">割合(%)</button>
+    </div>
+    <div class="right">
+      <button class="btn btn-reset" id="resetBtn">リセット</button>
+      <button class="btn btn-csv" id="csvBtn">比較CSV出力</button>
+    </div>
+  </div>
+
+  <div class="warn-banner" id="warnBanner"><span>⚠</span><span id="warnText"></span></div>
+
+  <div class="legend">
+    <span class="k"><span class="sw a"></span>A：<span class="name" id="legendA">全体</span></span>
+    <span class="k"><span class="sw b"></span>B：<span class="name" id="legendB">全体</span></span>
+  </div>
+
+  <div class="grid" id="grid"></div>
+  <div class="footer" id="footer"></div>
+</div>
+
+<script src="dashboard-core.js"></script>
+<script>
+const DATA_FILE = 'dashboard_data.json';
+let DATA = null;
+const stateA = {}, stateB = {};
+let mode = 'count';       /* 'count' | 'percent' */
+let charts = [];
+
+loadData(DATA_FILE)
+  .then(data=>{
+    DATA = data;
+    buildFilters(document.getElementById('filtersA'), data, stateA, render);
+    buildFilters(document.getElementById('filtersB'), data, stateB, render);
+    document.getElementById('resetBtn').addEventListener('click', ()=>{
+      data.filters.forEach(f=>{stateA[f.key]=ANY; stateB[f.key]=ANY;});
+      buildFilters(document.getElementById('filtersA'), data, stateA, render);
+      buildFilters(document.getElementById('filtersB'), data, stateB, render);
+      render();
+    });
+    document.getElementById('csvBtn').addEventListener('click', exportCompareCsv);
+    document.querySelectorAll('#modeToggle button').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        mode = b.dataset.mode;
+        document.querySelectorAll('#modeToggle button').forEach(x=>x.classList.toggle('on', x===b));
+        render();
+      });
+    });
+    render();
+  })
+  .catch(err=>{
+    document.querySelector('.wrap').innerHTML =
+      `<div class="status"><strong>⚠ データの読み込みに失敗しました（${err.message}）</strong>
+        <button class="reload-btn" onclick="location.reload()">再読み込み</button><br><br>
+        ・<code>${DATA_FILE}</code> と <code>dashboard-core.js</code> が <code>compare.html</code> と<strong>同じフォルダ</strong>にあるか<br>
+        ・GitHubにアップ済みか、<strong>Ctrl+F5</strong>で強制リロードを試してください
+      </div>`;
+  });
+
+/* A・Bを重ねた比較用の棒グラフ（mode対応） */
+function drawCompareBar(canvas, sec, mA, mB){
+  const horizontal = (LAYOUT[sec.key]||{}).horizontal;
+  const isPct = (mode==='percent');
+  const a = countLabels(mA, sec.labels), b = countLabels(mB, sec.labels);
+  let idx = sec.labels.map((_,i)=>i);
+  if(horizontal){ idx.sort((x,y)=>(b[y].count+a[y].count)-(b[x].count+a[x].count)); }
+  const labels = idx.map(i=>sec.labels[i]);
+  const fmtA = idx.map(i=>formatValue(a[i].count, mA.length, mode));
+  const fmtB = idx.map(i=>formatValue(b[i].count, mB.length, mode));
+  const ctx = canvas.getContext('2d');
+  return new Chart(ctx,{
+    type:'bar',
+    data:{labels, datasets:[
+      {label:'A', data:fmtA.map(f=>f.value), tips:fmtA.map(f=>f.tip), backgroundColor:GREEN, borderRadius:5, maxBarThickness:26},
+      {label:'B', data:fmtB.map(f=>f.value), tips:fmtB.map(f=>f.tip), backgroundColor:BLUE,  borderRadius:5, maxBarThickness:26},
+    ]},
+    options:{
+      indexAxis: horizontal ? 'y' : 'x',
+      responsive:true, maintainAspectRatio:false, animation:{duration:350},
+      plugins:{legend:{display:false},
+        tooltip:{padding:10, callbacks:{label:(c)=>` ${c.dataset.label}：${c.dataset.tips[c.dataIndex]}`}}},
+      scales:{
+        x:{beginAtZero:true, max:isPct&&horizontal?100:undefined,
+           grid:{color:GRID_COLOR,drawBorder:false},
+           ticks:{precision:0,color:'#5c6b63',font:{size:11},callback:v=>isPct&&horizontal?v+'%':v}},
+        y:{beginAtZero:true, max:isPct&&!horizontal?100:undefined,
+           grid:{display:!horizontal,color:GRID_COLOR,drawBorder:false},
+           ticks:{color:'#33413a',font:{size:12},
+                  callback:function(v){return isPct&&!horizontal?v+'%':this.getLabelForValue(v);}}}
+      }
+    }
+  });
+}
+
+/* 興味・関心のレーダーチャート（A緑・B青を重ね、割合(%)ベース推奨） */
+function drawRadar(canvas, sec, mA, mB){
+  const isPct = (mode==='percent');
+  const a = countLabels(mA, sec.labels), b = countLabels(mB, sec.labels);
+  const labels = sec.labels;
+  const dataA = a.map(it=> isPct ? Math.round(toPercent(it.count,mA.length)*10)/10 : it.count);
+  const dataB = b.map(it=> isPct ? Math.round(toPercent(it.count,mB.length)*10)/10 : it.count);
+  const tipsA = a.map(it=> formatValue(it.count, mA.length, mode).tip);
+  const tipsB = b.map(it=> formatValue(it.count, mB.length, mode).tip);
+  const ctx = canvas.getContext('2d');
+  return new Chart(ctx,{
+    type:'radar',
+    data:{labels, datasets:[
+      {label:'A', data:dataA, tips:tipsA, borderColor:GREEN, backgroundColor:'rgba(0,145,58,.18)',
+       pointBackgroundColor:GREEN, borderWidth:2, pointRadius:3},
+      {label:'B', data:dataB, tips:tipsB, borderColor:BLUE, backgroundColor:'rgba(0,103,185,.15)',
+       pointBackgroundColor:BLUE, borderWidth:2, pointRadius:3},
+    ]},
+    options:{
+      responsive:true, maintainAspectRatio:false, animation:{duration:400},
+      plugins:{legend:{display:false},
+        tooltip:{padding:10, callbacks:{label:(c)=>` ${c.dataset.label}：${c.dataset.tips[c.dataIndex]}`}}},
+      scales:{r:{
+        beginAtZero:true, suggestedMax: isPct?100:undefined,
+        angleLines:{color:'#e6ede9'}, grid:{color:'#e6ede9'},
+        pointLabels:{font:{size:11}, color:'#33413a'},
+        ticks:{backdropColor:'transparent', color:'#9aa8a1', font:{size:9},
+               callback:v=>isPct?v+'%':v}
+      }}
+    }
+  });
+}
+
+function render(){
+  charts.forEach(c=>c.destroy()); charts=[];
+  const mA = filterMembers(DATA, stateA);
+  const mB = filterMembers(DATA, stateB);
+  const lA = selectionText(DATA, stateA);
+  const lB = selectionText(DATA, stateB);
+
+  /* n表示と参考値ピル */
+  document.getElementById('countA').childNodes[0].nodeValue = mA.length + '名';
+  document.getElementById('countB').childNodes[0].nodeValue = mB.length + '名';
+  document.getElementById('warnA').style.display = isSmall(mA.length) ? 'inline-block' : 'none';
+  document.getElementById('warnB').style.display = isSmall(mB.length) ? 'inline-block' : 'none';
+  document.getElementById('legendA').textContent = lA + `（n=${mA.length}）`;
+  document.getElementById('legendB').textContent = lB + `（n=${mB.length}）`;
+
+  /* 少数サンプル警告バナー */
+  const warn = document.getElementById('warnBanner');
+  const smalls = [];
+  if(isSmall(mA.length)) smalls.push(`A（n=${mA.length}）`);
+  if(isSmall(mB.length)) smalls.push(`B（n=${mB.length}）`);
+  if(smalls.length){
+    warn.style.display='flex';
+    let msg = `${smalls.join(' / ')} は母数が少ないため、割合(%)は<b>参考値</b>です。`;
+    if(mode==='count' && mA.length!==mB.length){
+      msg += ` 母数が異なるので、公平に比べるには<b>「割合(%)」表示</b>がおすすめです。`;
+    }
+    document.getElementById('warnText').innerHTML = msg;
+  } else if(mode==='count' && mA.length && mB.length && mA.length!==mB.length){
+    warn.style.display='flex';
+    document.getElementById('warnText').innerHTML =
+      `A（n=${mA.length}）と B（n=${mB.length}）は母数が異なります。公平に比べるには<b>「割合(%)」表示</b>がおすすめです。`;
+  } else { warn.style.display='none'; }
+
+  /* グラフ */
+  const grid = document.getElementById('grid'); grid.innerHTML='';
+  const modeLabel = (mode==='percent') ? '割合(%)' : '件数';
+  DATA.sections.forEach(sec=>{
+    const lay = LAYOUT[sec.key]||{};
+    const useRadar = !!lay.radar;
+    const col = (lay.horizontal || useRadar) ? 'col-12' : 'col-6';
+    const card = document.createElement('div'); card.className='card '+col;
+    const h = useRadar ? 460 : (lay.horizontal ? Math.max(240, sec.labels.length*40+60) : 300);
+    const radarTag = useRadar ? '（レーダー）' : '';
+    card.innerHTML = `<h2><span class="dot"></span>${sec.title}${radarTag}
+        <span class="badge-mode">${modeLabel}</span></h2>
+      <div class="chart-box" style="height:${h}px"><canvas></canvas></div>`;
+    grid.appendChild(card);
+    const cv = card.querySelector('canvas');
+    charts.push(useRadar ? drawRadar(cv, sec, mA, mB) : drawCompareBar(cv, sec, mA, mB));
+  });
+
+  document.getElementById('footer').innerHTML =
+    `データソース：${DATA.meta.source_file}　｜　大林組 みんまちPJ`;
+}
+
+/* 比較CSV：A/Bの該当数・割合を横並びで出力 */
+function exportCompareCsv(){
+  const mA = filterMembers(DATA, stateA), mB = filterMembers(DATA, stateB);
+  const lA = selectionText(DATA, stateA), lB = selectionText(DATA, stateB);
+  const rows = [];
+  rows.push(['# みんまちPJ アンケート集計（A/B比較）']);
+  rows.push(['# グループA 条件', lA, '対象', mA.length+'名']);
+  rows.push(['# グループB 条件', lB, '対象', mB.length+'名']);
+  rows.push(['# 生成', DATA.meta.generated_at || '']);
+  rows.push([]);
+  rows.push(['カテゴリ','項目','A該当数','A割合(%)','B該当数','B割合(%)','差(A%-B%)']);
+  DATA.sections.forEach(sec=>{
+    const a = countLabels(mA, sec.labels), b = countLabels(mB, sec.labels);
+    sec.labels.forEach((lbl,i)=>{
+      const pa = mA.length ? (a[i].count/mA.length*100) : 0;
+      const pb = mB.length ? (b[i].count/mB.length*100) : 0;
+      rows.push([sec.title, lbl, a[i].count, pa.toFixed(1), b[i].count, pb.toFixed(1), (pa-pb).toFixed(1)]);
+    });
+  });
+  const csv = rows.map(r=>r.map(csvEsc).join(',')).join('\r\n');
+  downloadCsv(`みんまちPJ_比較_${stamp()}.csv`, csv);
+}
+</script>
+</body>
+</html>
