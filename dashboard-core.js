@@ -23,8 +23,10 @@ const SMALL_N = 10;
 const LAYOUT = {
   gender:    {horizontal:false},
   age:       {horizontal:false},
+  walk:      {horizontal:false},            /* 徒歩圏（縦棒） */
   residence: {horizontal:true},
   workplace: {horizontal:true},
+  media:     {horizontal:true},             /* 認知経路（横棒） */
   interest:  {horizontal:true, radar:true},  /* 興味・関心はレーダー対応 */
 };
 
