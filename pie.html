@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>みんまちPJ 会員属性ダッシュボード｜単一・円グラフ</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --obayashi-green:#00913A; --obayashi-green-dark:#00702D; --obayashi-green-light:#4FBB7A;
+  --obayashi-accent:#8DC63F; --blue:#0067B9; --blue-light:#5AA8E0;
+  --ink:#1b2a22; --sub:#5c6b63; --bg:#f4f7f5; --card:#ffffff; --line:#e3ebe6;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif;background:var(--bg);color:var(--ink);}
+.header{background:linear-gradient(120deg,var(--obayashi-green-dark) 0%,var(--obayashi-green) 55%,var(--obayashi-accent) 130%);
+  color:#fff;padding:30px 40px 26px;position:relative;overflow:hidden;}
+.header::after{content:"";position:absolute;right:-60px;top:-60px;width:260px;height:260px;background:rgba(255,255,255,.08);border-radius:50%;}
+.header .brand{display:flex;align-items:center;gap:14px;position:relative;z-index:1;}
+.header .logo{width:44px;height:44px;border-radius:10px;background:#fff;color:var(--obayashi-green);
+  display:flex;align-items:center;justify-content:center;font-weight:800;font-size:22px;box-shadow:0 4px 14px rgba(0,0,0,.18);}
+.header h1{margin:0;font-size:24px;letter-spacing:.04em;position:relative;z-index:1;}
+.header p{margin:8px 0 0;opacity:.92;font-size:14px;position:relative;z-index:1;}
+.tabs{position:absolute;top:24px;right:34px;z-index:2;display:flex;gap:8px;}
+.tabs a{display:inline-block;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:700;text-decoration:none;color:#fff;border:1.5px solid rgba(255,255,255,.6);transition:.15s;}
+.tabs a.active{background:#fff;color:var(--obayashi-green-dark);border-color:#fff;}
+.tabs a:hover{background:rgba(255,255,255,.2);}
+.tabs a.active:hover{background:#fff;}
+.wrap{max-width:1280px;margin:0 auto;padding:26px 24px 60px;}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:0 2px 10px rgba(0,50,20,.05);border-top:5px solid var(--obayashi-green);margin-bottom:16px;}
+.panel .tag{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:800;margin-bottom:14px;flex-wrap:wrap;}
+.panel .count{margin-left:auto;font-size:13px;font-weight:600;color:var(--sub);}
+.panel .count .warnpill{display:none;margin-left:8px;background:#fff4e0;color:#8a5a12;border:1px solid #f3ce88;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;}
+.filters{display:flex;gap:12px;flex-wrap:wrap;}
+.filter-item{display:flex;flex-direction:column;gap:5px;}
+.filter-item .fl-title{font-size:11px;font-weight:700;color:var(--sub);}
+.panel select{appearance:none;-webkit-appearance:none;font-size:13px;font-weight:600;color:var(--ink);padding:8px 32px 8px 12px;border:2px solid var(--line);border-radius:9px;min-width:160px;cursor:pointer;
+  background:#fff url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%235c6b63' stroke-width='3'><path d='M6 9l6 6 6-6'/></svg>") no-repeat right 10px center;}
+.panel select:focus{border-color:var(--obayashi-green);outline:none;}
+.toolbar{display:flex;gap:10px;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;}
+.mode-note{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--obayashi-green-dark);background:#eef6f0;border:2px solid var(--obayashi-green-light);border-radius:10px;padding:8px 14px;}
+.toolbar .right{display:flex;gap:10px;}
+.btn{border:none;border-radius:10px;padding:10px 18px;font-size:14px;font-weight:700;cursor:pointer;transition:.15s;}
+.btn-reset{background:#eef3f0;color:var(--sub);}
+.btn-reset:hover{background:#e0e8e3;}
+.btn-csv{background:var(--obayashi-green);color:#fff;box-shadow:0 3px 10px rgba(0,145,58,.3);}
+.btn-csv:hover{background:var(--obayashi-green-dark);}
+.warn-banner{display:none;align-items:center;gap:10px;background:#fff4e0;border:1px solid #f3ce88;color:#8a5a12;border-radius:12px;padding:12px 18px;margin-bottom:18px;font-size:13px;line-height:1.6;}
+.grid{display:grid;grid-template-columns:repeat(12,1fr);gap:20px;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px 24px 26px;box-shadow:0 2px 12px rgba(0,50,20,.05);}
+.card.col-6{grid-column:span 6;}
+.card.col-12{grid-column:span 12;}
+.card h2{margin:0 0 14px;font-size:17px;display:flex;align-items:center;gap:10px;}
+.card h2 .dot{width:11px;height:11px;border-radius:3px;background:var(--obayashi-green);}
+.card h2 .badge-mode{margin-left:auto;font-size:11px;font-weight:700;color:var(--sub);background:#f0f4f2;border-radius:20px;padding:3px 10px;}
+.chart-box{position:relative;width:100%;}
+.footer{margin-top:34px;text-align:center;font-size:12px;color:var(--sub);}
+.status{max-width:1200px;margin:20px auto;padding:18px 22px;border-radius:14px;background:#fff8e6;border:1px solid #f0d98a;color:#7a5a10;font-size:14px;line-height:1.7;}
+.status code{background:#fdeecb;padding:2px 6px;border-radius:5px;}
+.reload-btn{display:inline-block;margin-left:8px;padding:4px 12px;border:none;border-radius:8px;background:#fff;color:var(--obayashi-green-dark);font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,.15);}
+@media(max-width:900px){.card.col-6{grid-column:span 12;}.tabs{position:static;margin-top:14px;}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="tabs">
+    <a href="index.html">単一・棒グラフ</a>
+    <a href="pie.html" class="active">単一・円グラフ</a>
+    <a href="compare.html">比較・棒グラフ</a>
+  </div>
+  <div class="brand">
+    <div class="logo">大</div>
+    <div><h1>みんまちPJ 会員属性ダッシュボード｜単一・円グラフ</h1></div>
+  </div>
+  <p>性別・年代で絞り込み、各属性の<strong>割合（構成比）</strong>を円グラフで確認できます。</p>
+</div>
+<div class="wrap">
+  <div class="panel">
+    <div class="tag">絞り込み
+      <span class="count" id="countN">0名<span class="warnpill" id="warnPill">参考値</span></span>
+    </div>
+    <div class="filters" id="filters"></div>
+  </div>
+  <div class="toolbar">
+    <div class="mode-note">◯ 割合（構成比）表示のみ</div>
+    <div class="right">
+      <button class="btn btn-reset" id="resetBtn">リセット</button>
+      <button class="btn btn-csv" id="csvBtn">CSV出力</button>
+    </div>
+  </div>
+  <div class="warn-banner" id="warnBanner"><span>⚠</span><span id="warnText"></span></div>
+  <div class="grid" id="grid"></div>
+  <div class="footer" id="footer"></div>
+</div>
+<script src="dashboard-core.js"></script>
+<script>
+const DATA_FILE = 'dashboard_data.json';
+let DATA = null;
+const state = {};
+let charts = [];
+
+loadData(DATA_FILE)
+  .then(data=>{
+    DATA = data;
+    buildFilters(document.getElementById('filters'), data, state, render);
+    document.getElementById('resetBtn').addEventListener('click', ()=>{
+      data.filters.forEach(f=>{ state[f.key]=ANY; });
+      buildFilters(document.getElementById('filters'), data, state, render);
+      render();
+    });
+    document.getElementById('csvBtn').addEventListener('click', ()=>{
+      const members = filterMembers(DATA, state);
+      const csv = buildPieCsv(DATA, members, selectionText(DATA, state));
+      downloadCsv(`みんまちPJ_構成比_${stamp()}.csv`, csv);
+    });
+    render();
+  })
+  .catch(err=>{
+    document.querySelector('.wrap').innerHTML =
+      `<div class="status"><strong>⚠ データの読み込みに失敗しました（${err.message}）</strong>
+        <button class="reload-btn" onclick="location.reload()">再読み込み</button><br><br>
+        ・<code>${DATA_FILE}</code> と <code>dashboard-core.js</code> が <code>pie.html</code> と<strong>同じフォルダ</strong>にあるか<br>
+        ・ローカルで開く場合はブラウザのfetch制限により読めないことがあります。GitHub Pages等のサーバ経由か、<strong>Ctrl+F5</strong>で強制リロードを試してください
+      </div>`;
+  });
+
+function render(){
+  charts.forEach(c=>c.destroy()); charts=[];
+  const members = filterMembers(DATA, state);
+  const n = members.length;
+  document.getElementById('countN').childNodes[0].nodeValue = n + '名';
+  document.getElementById('warnPill').style.display = isSmall(n) ? 'inline-block' : 'none';
+
+  const warn = document.getElementById('warnBanner');
+  if(isSmall(n)){
+    warn.style.display='flex';
+    document.getElementById('warnText').innerHTML =
+      `対象（n=${n}）は母数が少ないため、割合（構成比）は<b>参考値</b>です。`;
+  } else { warn.style.display='none'; }
+
+  const grid = document.getElementById('grid'); grid.innerHTML='';
+  DATA.sections.forEach(sec=>{
+    /* 選択肢が多い設問（認知経路・興味/関心）は横幅いっぱい＋凡例は右 */
+    const many = sec.labels.length > 6;
+    const col  = many ? 'col-12' : 'col-6';
+    const h    = many ? 460 : 320;
+    const legendPos = 'right';
+    const multi = (sec.key==='media' || sec.key==='interest');
+    const noteTag = multi ? '（複数選択：回答全体の構成比）' : '';
+    const card = document.createElement('div'); card.className='card '+col;
+    card.innerHTML = `<h2><span class="dot"></span>${sec.title}${noteTag}
+        <span class="badge-mode">割合(%)</span></h2>
+      <div class="chart-box" style="height:${h}px"><canvas></canvas></div>`;
+    grid.appendChild(card);
+    const cv = card.querySelector('canvas');
+    charts.push(drawPie(cv, sec, members, legendPos));
+  });
+
+  document.getElementById('footer').innerHTML =
+    `データソース：${DATA.meta.source_file}　｜　生成：${DATA.meta.generated_at || ''}　｜　大林組 みんまちPJ`;
+}
+</script>
+</body>
+</html>
