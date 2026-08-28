@@ -218,6 +218,82 @@ function drawPie(canvas, sec, members, legendPos){
   });
 }
 
+/* =====================================================================
+   時系列（推移）ライン描画：会員登録数の推移／流入経路の推移
+   ・data.timeseries.registration … {dates:[], counts:[](日次＝その日の登録者数), cumulative:[]}
+   ・data.timeseries.source        … {dates:[], series:[{name,counts(日次),cumulative}]}
+   ・絞り込み（性別・年代）には連動しない全体推移のオーバービューです。
+   ===================================================================== */
+let tsCharts = [];
+
+function drawLineChart(canvas, labels, datasets){
+  const ctx = canvas.getContext('2d');
+  return new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: datasets.length > 1, position: 'bottom',
+                  labels: { boxWidth: 12, boxHeight: 12, padding: 10,
+                            font: { size: 11 }, color: '#33413a' } },
+        tooltip: { padding: 10 }
+      },
+      scales: {
+        x: { grid: { color: GRID_COLOR, drawBorder: false },
+             ticks: { color: '#5c6b63', font: { size: 11 } } },
+        y: { beginAtZero: true, grid: { color: GRID_COLOR, drawBorder: false },
+             ticks: { precision: 0, color: '#5c6b63', font: { size: 11 } } }
+      }
+    }
+  });
+}
+
+/* 推移カード（絞り込みパネルの下・グラフ一番上に差し込む） */
+function renderTimeseries(container, data){
+  tsCharts.forEach(c => c.destroy()); tsCharts = [];
+  if(!container) return;
+  container.innerHTML = '';
+  const ts = (data && data.timeseries) || {};
+
+  /* ① 会員登録数の推移（緑の折れ線・日次＝その日の登録者数） */
+  const reg = ts.registration;
+  if(reg && reg.dates && reg.dates.length){
+    const modeTag = (reg.mode === 'cumulative') ? '累計' : '日次';
+    const card = document.createElement('div'); card.className = 'card col-12';
+    card.innerHTML = `<h2><span class="dot"></span>${reg.title}
+        <span class="badge-mode">${modeTag}・登録日</span></h2>
+      <div class="chart-box" style="height:300px"><canvas></canvas></div>`;
+    container.appendChild(card);
+    tsCharts.push(drawLineChart(card.querySelector('canvas'), reg.dates, [{
+      label: '会員登録数', data: reg.counts,
+      borderColor: GREEN, backgroundColor: 'rgba(0,145,58,.12)',
+      borderWidth: 2.5, pointBackgroundColor: GREEN, pointRadius: 4,
+      tension: .25, fill: true
+    }]));
+  }
+
+  /* ② 流入経路の推移（経路ごとに1本・今回は5本） */
+  const src = ts.source;
+  if(src && src.dates && src.dates.length && src.series && src.series.length){
+    const modeTag = (src.mode === 'cumulative') ? '累計' : '日次';
+    const card = document.createElement('div'); card.className = 'card col-12';
+    card.innerHTML = `<h2><span class="dot"></span>${src.title}
+        <span class="badge-mode">${modeTag}・流入経路別</span></h2>
+      <div class="chart-box" style="height:340px"><canvas></canvas></div>`;
+    container.appendChild(card);
+    const datasets = src.series.map((s, i) => {
+      const col = PIE_COLORS[i % PIE_COLORS.length];
+      return { label: s.name, data: s.counts,
+               borderColor: col, backgroundColor: col,
+               borderWidth: 2.5, pointBackgroundColor: col, pointRadius: 4,
+               tension: .25, fill: false };
+    });
+    tsCharts.push(drawLineChart(card.querySelector('canvas'), src.dates, datasets));
+  }
+}
+
 /* ===== 円グラフ用CSV生成（割合のみ・構成比） ===== */
 function buildPieCsv(data, members, selectionLabel){
   const rows = [];

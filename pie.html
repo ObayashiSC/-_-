@@ -31,6 +31,10 @@ body{margin:0;font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-s
 .panel .tag{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:800;margin-bottom:14px;flex-wrap:wrap;}
 .panel .count{margin-left:auto;font-size:13px;font-weight:600;color:var(--sub);}
 .panel .count .warnpill{display:none;margin-left:8px;background:#fff4e0;color:#8a5a12;border:1px solid #f3ce88;border-radius:20px;padding:2px 10px;font-size:11px;font-weight:700;}
+.survey-count{margin-left:auto;display:inline-flex;align-items:baseline;gap:2px;}
+.survey-count .sc-label{font-size:16px;font-weight:800;color:var(--ink);}
+.survey-count .sc-num{font-size:34px;font-weight:800;color:var(--obayashi-green-dark);line-height:1;margin:0 3px;}
+.survey-count .sc-unit{font-size:16px;font-weight:800;color:var(--ink);}
 .filters{display:flex;gap:12px;flex-wrap:wrap;}
 .filter-item{display:flex;flex-direction:column;gap:5px;}
 .filter-item .fl-title{font-size:11px;font-weight:700;color:var(--sub);}
@@ -77,10 +81,12 @@ body{margin:0;font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-s
 <div class="wrap">
   <div class="panel">
     <div class="tag">絞り込み
-      <span class="count" id="countN">0名<span class="warnpill" id="warnPill">参考値</span></span>
+      <span class="count survey-count" id="countN"><span class="sc-label">アンケート回答数：</span><span class="sc-num" id="countNum">0</span><span class="sc-unit">名</span><span class="warnpill" id="warnPill">参考値</span></span>
     </div>
     <div class="filters" id="filters"></div>
   </div>
+  <!-- 推移グラフ（絞り込みの下・グラフ一番上）: 会員登録数の推移／流入経路の推移 -->
+  <div class="grid" id="tsGrid" style="margin-bottom:20px;"></div>
   <div class="toolbar">
     <div class="mode-note">◯ 割合（構成比）表示のみ</div>
     <div class="right">
@@ -102,6 +108,7 @@ let charts = [];
 loadData(DATA_FILE)
   .then(data=>{
     DATA = data;
+    renderTimeseries(document.getElementById('tsGrid'), data);   // 推移グラフ（全体・絞り込み非連動）
     buildFilters(document.getElementById('filters'), data, state, render);
     document.getElementById('resetBtn').addEventListener('click', ()=>{
       data.filters.forEach(f=>{ state[f.key]=ANY; });
@@ -128,7 +135,7 @@ function render(){
   charts.forEach(c=>c.destroy()); charts=[];
   const members = filterMembers(DATA, state);
   const n = members.length;
-  document.getElementById('countN').childNodes[0].nodeValue = n + '名';
+  document.getElementById('countNum').textContent = n;
   document.getElementById('warnPill').style.display = isSmall(n) ? 'inline-block' : 'none';
 
   const warn = document.getElementById('warnBanner');

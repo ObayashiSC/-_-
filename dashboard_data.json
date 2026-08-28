@@ -1,9 +1,10 @@
 {
   "meta": {
-    "generated_at": "2026-08-27 15:27:32",
+    "generated_at": "2026-08-28 02:13:12",
     "source_file": "mart_user_answer_20260827-144813.csv",
     "question_def": "stg_question.xlsx",
-    "total_members": 13
+    "total_members": 13,
+    "answer_count": 13
   },
   "segments": [],
   "filters": [
@@ -415,5 +416,85 @@
         "家族への配慮"
       ]
     }
-  ]
+  ],
+  "timeseries": {
+    "registration": {
+      "title": "会員登録数の推移",
+      "mode": "daily",
+      "dates": [
+        "2026-07-28",
+        "2026-07-30"
+      ],
+      "counts": [
+        1,
+        4
+      ],
+      "cumulative": [
+        1,
+        5
+      ],
+      "total": 5,
+      "source_file": "mart_user_demographics_20260824-133537.csv"
+    },
+    "source": {
+      "title": "流入経路の推移",
+      "mode": "daily",
+      "dates": [
+        "2026-08-25"
+      ],
+      "series": [
+        {
+          "name": "ノベルティ",
+          "counts": [
+            2
+          ],
+          "cumulative": [
+            2
+          ],
+          "total": 2
+        },
+        {
+          "name": "みんまちDROP",
+          "counts": [
+            1
+          ],
+          "cumulative": [
+            1
+          ],
+          "total": 1
+        },
+        {
+          "name": "WEBサイト",
+          "counts": [
+            1
+          ],
+          "cumulative": [
+            1
+          ],
+          "total": 1
+        },
+        {
+          "name": "リテンションメール",
+          "counts": [
+            1
+          ],
+          "cumulative": [
+            1
+          ],
+          "total": 1
+        },
+        {
+          "name": "イントラ",
+          "counts": [
+            1
+          ],
+          "cumulative": [
+            1
+          ],
+          "total": 1
+        }
+      ],
+      "source_file": "mart_user_source_20260828-104447.csv"
+    }
+  }
 }
