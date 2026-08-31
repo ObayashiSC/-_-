@@ -294,12 +294,9 @@ function render(){
     const card = document.createElement('div'); card.className='card '+col;
     const h = useRadar ? 460 : (lay.horizontal ? Math.max(240, sec.labels.length*40+60) : 300);
     const radarTag = useRadar ? '（レーダー）' : '';
-    /* ③ グラフの下に A%・B%・差分(±pt) の差分テーブルを追加 */
-    const diffHtml = useRadar ? '' : buildCompareDiffTable(sec, mA, mB);
     card.innerHTML = `<h2><span class="dot"></span>${sec.title}${radarTag}
         <span class="badge-mode">${modeLabel}</span></h2>
-      <div class="chart-box" style="height:${h}px"><canvas></canvas></div>
-      ${diffHtml}`;
+      <div class="chart-box" style="height:${h}px"><canvas></canvas></div>`;
     grid.appendChild(card);
     const cv = card.querySelector('canvas');
     charts.push(useRadar ? drawRadar(cv, sec, mA, mB) : drawCompareBar(cv, sec, mA, mB));
