@@ -250,9 +250,28 @@ function drawLineChart(canvas, labels, datasets){
 }
 
 /* 推移カード（絞り込みパネルの下・グラフ一番上に差し込む） */
+/* 推移カード用スタイル（合計バッジ・経路別内訳）を一度だけ注入 */
+function ensureTsStyle(){
+  if(document.getElementById('ts-summary-style')) return;
+  const st = document.createElement('style');
+  st.id = 'ts-summary-style';
+  st.textContent = `
+    .ts-total{margin-left:12px;font-size:13px;font-weight:700;color:#00702D;
+      background:#eaf6ef;border:1px solid #bfe3cd;border-radius:20px;padding:3px 12px;}
+    .ts-total b{font-size:15px;}
+    .ts-breakdown{display:flex;flex-wrap:wrap;gap:8px 14px;margin:2px 0 14px;}
+    .ts-chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;
+      color:#33413a;background:#f3f7f4;border:1px solid #e3ebe6;border-radius:20px;padding:4px 11px;}
+    .ts-chip b{font-size:13.5px;color:#1b2a22;}
+    .ts-sw{width:11px;height:11px;border-radius:3px;display:inline-block;}
+  `;
+  document.head.appendChild(st);
+}
+
 function renderTimeseries(container, data){
   tsCharts.forEach(c => c.destroy()); tsCharts = [];
   if(!container) return;
+  ensureTsStyle();
   container.innerHTML = '';
   const ts = (data && data.timeseries) || {};
 
@@ -260,8 +279,13 @@ function renderTimeseries(container, data){
   const reg = ts.registration;
   if(reg && reg.dates && reg.dates.length){
     const modeTag = (reg.mode === 'cumulative') ? '累計' : '日次';
+    /* 合計会員数＝日次件数の総和（total があればそれを優先） */
+    const regTotal = (reg.total != null)
+      ? reg.total
+      : (reg.counts || []).reduce((a, b) => a + (Number(b) || 0), 0);
     const card = document.createElement('div'); card.className = 'card col-12';
     card.innerHTML = `<h2><span class="dot"></span>${reg.title}
+        <span class="ts-total">合計 <b>${regTotal}</b> 人</span>
         <span class="badge-mode">${modeTag}・登録日</span></h2>
       <div class="chart-box" style="height:300px"><canvas></canvas></div>`;
     container.appendChild(card);
@@ -277,9 +301,20 @@ function renderTimeseries(container, data){
   const src = ts.source;
   if(src && src.dates && src.dates.length && src.series && src.series.length){
     const modeTag = (src.mode === 'cumulative') ? '累計' : '日次';
+    /* 経路ごとの合計人数（total があればそれを優先） */
+    const srcGrand = src.series.reduce((a, s) =>
+      a + (s.total != null ? s.total : (s.counts || []).reduce((x, y) => x + (Number(y) || 0), 0)), 0);
+    /* 経路名 〇人 を色付きチップで並べる */
+    const perRoute = src.series.map((s, i) => {
+      const col = PIE_COLORS[i % PIE_COLORS.length];
+      const t = (s.total != null) ? s.total : (s.counts || []).reduce((x, y) => x + (Number(y) || 0), 0);
+      return `<span class="ts-chip"><span class="ts-sw" style="background:${col}"></span>${s.name} <b>${t}</b>人</span>`;
+    }).join('');
     const card = document.createElement('div'); card.className = 'card col-12';
     card.innerHTML = `<h2><span class="dot"></span>${src.title}
+        <span class="ts-total">合計 <b>${srcGrand}</b> 人</span>
         <span class="badge-mode">${modeTag}・流入経路別</span></h2>
+      <div class="ts-breakdown">${perRoute}</div>
       <div class="chart-box" style="height:340px"><canvas></canvas></div>`;
     container.appendChild(card);
     const datasets = src.series.map((s, i) => {
