@@ -288,6 +288,34 @@ const PieValueLabels = {
 };
 
 /* =====================================================================
+   ② 折れ線グラフ（推移）用の値ラベル描画プラグイン
+      ・各データ点の上に数値（＝その日の人数）を表示。
+      ・値が 0 の点は省略（重なり・ゼロ羅列を防ぐ）。
+      ・複数系列（流入経路）でも各点に系列色で表示します。
+   ===================================================================== */
+const LineValueLabels = {
+  id: 'lineValueLabels',
+  afterDatasetsDraw(chart){
+    const ctx = chart.ctx;
+    chart.data.datasets.forEach((ds, di)=>{
+      const meta = chart.getDatasetMeta(di);
+      if(meta.hidden) return;
+      meta.data.forEach((pt, i)=>{
+        const v = Number(ds.data[i]);
+        if(!v || v <= 0) return;                // 0 や欠損は表示しない
+        ctx.save();
+        ctx.font = '700 11px "Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif';
+        ctx.fillStyle = ds.borderColor || '#33413a';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(String(v), pt.x, pt.y - 7);   // 点の少し上に人数を描画
+        ctx.restore();
+      });
+    });
+  }
+};
+
+/* =====================================================================
    ③ 比較モードの差分テーブルHTMLを作る
       例）男性  A:65%  B:42%  差分:+23pt
       ・各項目について A割合(%)・B割合(%)・差分(±pt) を並べる。
@@ -448,9 +476,11 @@ function drawLineChart(canvas, labels, datasets){
   return new Chart(ctx, {
     type: 'line',
     data: { labels, datasets },
+    plugins: [LineValueLabels],   // ② 各データ点の上に人数を表示
     options: {
       responsive: true, maintainAspectRatio: false, animation: { duration: 400 },
       interaction: { mode: 'index', intersect: false },
+      layout: { padding: { top: 22 } },   // 上の数値ラベルが切れないよう余白
       plugins: {
         legend: { display: datasets.length > 1, position: 'bottom',
                   labels: { boxWidth: 12, boxHeight: 12, padding: 10,
