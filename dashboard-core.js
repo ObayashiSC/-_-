@@ -29,13 +29,46 @@ const LAYOUT = {
   attachment_stage: {horizontal:false},      /* 愛着段階（縦棒・左から段0→段4） */
 };
 
+/* =====================================================================
+   グラフ（属性セクション）の表示順マスタ
+   ・この配列の順にカードを並べ替えます（3ビュー共通・CSV出力も同順）。
+   ・会員登録数の推移／流入経路の推移は別枠（推移グラフ）で先に表示されます。
+   ・ここに無い key は、この後ろに元の順序のまま残ります（並びが安定）。
+   ・設問が増減しても key を足し引きするだけでOK（順番はここで一元管理）。
+   ===================================================================== */
+const SECTION_ORDER = [
+  'media',             // 認知経路
+  'attachment_stage',  // 愛着（段階）
+  'gender',            // 性別
+  'age',               // 年代
+  'workplace',         // 勤務地
+  'residence',         // 住まい
+];
+
+/* SECTION_ORDER に従って data.sections を並べ替える（安定ソート） */
+function applySectionOrder(data){
+  if(!data || !Array.isArray(data.sections)) return data;
+  const rank = {};
+  SECTION_ORDER.forEach((k, i)=>{ rank[k] = i; });
+  const big = SECTION_ORDER.length;   // 未指定keyは末尾へ
+  data.sections
+    .map((s, i)=>({s, i}))                                   // 元indexを保持
+    .sort((a, b)=>{
+      const ra = (a.s.key in rank) ? rank[a.s.key] : big;
+      const rb = (b.s.key in rank) ? rank[b.s.key] : big;
+      return ra - rb || a.i - b.i;                           // 同順位は元の順を維持
+    })
+    .forEach((o, idx)=>{ data.sections[idx] = o.s; });        // 並べ替え結果を書き戻し
+  return data;
+}
+
 /* ===== データ読み込み（キャッシュ無効化つき） ===== */
 function loadData(dataFile){
   const url = dataFile + '?t=' + Date.now();
   return fetch(url, {cache:'no-store'}).then(res=>{
     if(!res.ok) throw new Error('HTTP '+res.status);
     return res.json();
-  });
+  }).then(applySectionOrder);   // ← 読み込み直後に表示順を適用（3ビュー共通）
 }
 
 /* ===== グラデーション生成 ===== */
