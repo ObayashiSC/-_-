@@ -316,51 +316,6 @@ const LineValueLabels = {
 };
 
 /* =====================================================================
-   ③ 比較モードの差分テーブルHTMLを作る
-      例）男性  A:65%  B:42%  差分:+23pt
-      ・各項目について A割合(%)・B割合(%)・差分(±pt) を並べる。
-      ・差分の符号で色分け（プラス=緑／マイナス=青）。
-   ===================================================================== */
-function ensureDiffStyle(){
-  if(document.getElementById('diff-table-style')) return;
-  const st = document.createElement('style');
-  st.id = 'diff-table-style';
-  st.textContent = `
-    .diff-table{width:100%;border-collapse:collapse;margin-top:14px;font-size:12.5px;}
-    .diff-table th,.diff-table td{padding:6px 10px;border-bottom:1px solid #eef3f0;text-align:right;}
-    .diff-table th{font-size:11px;color:#5c6b63;font-weight:700;background:#f6faf8;}
-    .diff-table td.item,.diff-table th.item{text-align:left;font-weight:600;color:#1b2a22;}
-    .diff-table td.a{color:#00702D;font-weight:700;}
-    .diff-table td.b{color:#0067B9;font-weight:700;}
-    .diff-pos{color:#00913A;font-weight:800;}
-    .diff-neg{color:#0067B9;font-weight:800;}
-    .diff-zero{color:#9aa8a1;font-weight:700;}
-  `;
-  document.head.appendChild(st);
-}
-function buildCompareDiffTable(sec, mA, mB){
-  ensureDiffStyle();
-  const a = countLabels(mA, sec.labels), b = countLabels(mB, sec.labels);
-  let rows = '';
-  sec.labels.forEach((lbl, i)=>{
-    const pa = mA.length ? (a[i].count / mA.length * 100) : 0;
-    const pb = mB.length ? (b[i].count / mB.length * 100) : 0;
-    const diff = pa - pb;
-    const sign = diff > 0 ? '+' : (diff < 0 ? '' : '±');
-    const cls  = diff > 0 ? 'diff-pos' : (diff < 0 ? 'diff-neg' : 'diff-zero');
-    rows += `<tr>
-      <td class="item">${lbl}</td>
-      <td class="a">${pa.toFixed(0)}%</td>
-      <td class="b">${pb.toFixed(0)}%</td>
-      <td class="${cls}">${sign}${Math.round(diff)}pt</td>
-    </tr>`;
-  });
-  return `<table class="diff-table">
-    <thead><tr><th class="item">項目</th><th>A</th><th>B</th><th>差分</th></tr></thead>
-    <tbody>${rows}</tbody></table>`;
-}
-
-/* =====================================================================
    単一ビュー用：1つの棒グラフを描画（mode対応）
    ===================================================================== */
 function drawBar(canvas, sec, members, mode, colorSet){
