@@ -1,6 +1,6 @@
 {
   "meta": {
-    "generated_at": "2026-08-31 00:57:09",
+    "generated_at": "2026-08-31 11:35:58",
     "source_file": "mart_user_answer_20260831-085004.csv",
     "question_def": "stg_question.xlsx",
     "total_members": 16,
@@ -79,8 +79,7 @@
         "北品川エリアビル",
         "天王洲エリアビル",
         "上記以外の東京都内ビル",
-        "勤務地その他",
-        "品川インターシティB棟,品川シーズンテラス"
+        "勤務地その他"
       ]
     },
     {
@@ -366,7 +365,7 @@
         16
       ],
       "total": 16,
-      "source_file": "mart_user_demographics_20260831-092938.csv"
+      "source_file": "mart_user_demographics_20260831-113449.csv"
     },
     "source": {
       "title": "流入経路の推移",
