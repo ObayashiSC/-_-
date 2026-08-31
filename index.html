@@ -87,6 +87,8 @@ body{margin:0;font-family:"Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-s
     </div>
     <div class="filters" id="filters"></div>
   </div>
+  <!-- ① 現在の絞り込み条件を表示するバー -->
+  <div id="condBar"></div>
   <!-- 推移グラフ（絞り込みの下・グラフ一番上）: 会員登録数の推移／流入経路の推移 -->
   <div class="grid" id="tsGrid" style="margin-bottom:20px;"></div>
   <div class="toolbar">
@@ -181,6 +183,8 @@ function render(){
 
   document.getElementById('countNum').textContent = n;
   document.getElementById('warnPill').style.display = isSmall(n) ? 'inline-block' : 'none';
+  /* ① 現在の絞り込み条件を表示 */
+  renderConditionBar(document.getElementById('condBar'), DATA, state);
 
   const warn = document.getElementById('warnBanner');
   if(isSmall(n)){
