@@ -62,13 +62,37 @@ function applySectionOrder(data){
   return data;
 }
 
+/* =====================================================================
+   ④ 年代（age）の軸並びを「若い順」に固定：
+      20代未満 → 20代 → 30代 → … → 60代 → 70代以上
+   ・JSON側の並びが降順でも、ここで昇順に整えるので再生成は不要。
+   ・「未満」は数値の少し手前、「以上」は少し後ろに寄せて端に来るよう調整。
+   ===================================================================== */
+function ageAscKey(label){
+  const m = String(label).match(/\d+/);
+  const n = m ? parseInt(m[0], 10) : 0;
+  if(String(label).includes('未満')) return n - 0.5;   // 例: 20代未満 → 19.5（先頭側）
+  if(String(label).includes('以上')) return n + 0.5;   // 例: 70代以上 → 70.5（末尾側）
+  return n;
+}
+function applyAgeOrder(data){
+  if(!data || !Array.isArray(data.sections)) return data;
+  const sec = data.sections.find(s => s.key === 'age');
+  if(sec && Array.isArray(sec.labels)){
+    sec.labels = sec.labels.slice().sort((a, b)=> ageAscKey(a) - ageAscKey(b));
+  }
+  return data;
+}
+
 /* ===== データ読み込み（キャッシュ無効化つき） ===== */
 function loadData(dataFile){
   const url = dataFile + '?t=' + Date.now();
   return fetch(url, {cache:'no-store'}).then(res=>{
     if(!res.ok) throw new Error('HTTP '+res.status);
     return res.json();
-  }).then(applySectionOrder);   // ← 読み込み直後に表示順を適用（3ビュー共通）
+  })
+  .then(applySectionOrder)   // ← 読み込み直後に表示順を適用（3ビュー共通）
+  .then(applyAgeOrder);      // ← 年代は若い順（20代未満→…→70代以上）に固定
 }
 
 /* ===== グラデーション生成 ===== */
@@ -130,6 +154,59 @@ function selectionText(data, selection){
   return parts.length ? parts.join('・') : '全体';
 }
 
+/* =====================================================================
+   ① 現在の絞り込み条件を「項目：値」で表示するHTMLを作る
+      例）現在の条件： 性別：男性　年代：30代
+      絞り込みが無ければ「全体（絞り込みなし）」と表示。
+   ===================================================================== */
+function selectionConditionHtml(data, selection){
+  const chips = [];
+  for(const f of data.filters){
+    const v = selection[f.key];
+    if(v && v !== ANY){
+      chips.push(`<span class="cond-chip"><b>${f.title}</b>：${v}</span>`);
+    }
+  }
+  const body = chips.length ? chips.join('') : '<span class="cond-all">全体（絞り込みなし）</span>';
+  return `<span class="cond-label">現在の条件</span>${body}`;
+}
+
+/* 現在の条件バー用スタイルを一度だけ注入（HTML側にstyle追記が不要） */
+function ensureCondStyle(){
+  if(document.getElementById('cond-bar-style')) return;
+  const st = document.createElement('style');
+  st.id = 'cond-bar-style';
+  st.textContent = `
+    .cond-bar{display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+      background:#eef6f0;border:1px solid #bfe3cd;border-radius:12px;
+      padding:10px 14px;margin-bottom:16px;font-size:13px;color:#1b2a22;}
+    .cond-bar .cond-label{font-weight:800;color:#00702D;margin-right:2px;}
+    .cond-bar .cond-chip{background:#fff;border:1px solid #cfe6d8;border-radius:20px;
+      padding:4px 12px;font-weight:600;}
+    .cond-bar .cond-chip b{color:#00702D;font-weight:800;}
+    .cond-bar .cond-all{color:#5c6b63;font-weight:700;}
+  `;
+  document.head.appendChild(st);
+}
+
+/* 現在の条件バーを描画（container に対して更新） */
+function renderConditionBar(container, data, selection){
+  if(!container) return;
+  ensureCondStyle();
+  container.className = 'cond-bar';
+  container.innerHTML = selectionConditionHtml(data, selection);
+}
+
+/* ① 現在の絞り込み条件をプレーンテキストで返す（例: 性別：男性　年代：30代） */
+function selectionConditionText(data, selection){
+  const parts = [];
+  for(const f of data.filters){
+    const v = selection[f.key];
+    if(v && v !== ANY) parts.push(`${f.title}：${v}`);
+  }
+  return parts.length ? parts.join('　') : '全体';
+}
+
 /* ===== 母数が少ないか判定 ===== */
 function isSmall(n){ return n > 0 && n < SMALL_N; }
 
@@ -154,6 +231,108 @@ function buildFilters(container, data, state, onChange){
 }
 
 /* =====================================================================
+   ② グラフ内に数値を出す：棒グラフ用の値ラベル描画プラグイン
+      ・各データセットの dlabels[i]（表示文字列）を棒の先端に描画。
+      ・縦棒は棒の上、横棒は棒の右に表示。0 も明示的に表示します。
+   ===================================================================== */
+const BarValueLabels = {
+  id: 'barValueLabels',
+  afterDatasetsDraw(chart){
+    const ctx = chart.ctx;
+    const horizontal = (chart.options.indexAxis === 'y');
+    chart.data.datasets.forEach((ds, di)=>{
+      const meta = chart.getDatasetMeta(di);
+      if(meta.hidden || !ds.dlabels) return;
+      meta.data.forEach((el, i)=>{
+        const text = ds.dlabels[i];
+        if(text == null || text === '') return;
+        ctx.save();
+        ctx.font = '700 11px "Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif';
+        ctx.fillStyle = ds.dlabelColor || '#33413a';
+        if(horizontal){
+          ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+          ctx.fillText(text, el.x + 6, el.y);
+        } else {
+          ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+          ctx.fillText(text, el.x, el.y - 4);
+        }
+        ctx.restore();
+      });
+    });
+  }
+};
+
+/* ② 円グラフ用：各スライスに割合(%)を描画するプラグイン */
+const PieValueLabels = {
+  id: 'pieValueLabels',
+  afterDatasetsDraw(chart){
+    const ctx = chart.ctx;
+    const meta = chart.getDatasetMeta(0);
+    const data = chart.data.datasets[0].data || [];
+    const sum = data.reduce((a,b)=> a + (Number(b)||0), 0);
+    if(!sum) return;
+    meta.data.forEach((el, i)=>{
+      const v = Number(data[i])||0;
+      if(v <= 0) return;
+      const p = v / sum * 100;
+      if(p < 4) return;                 // 小さすぎるスライスは省略（重なり防止）
+      const pos = el.tooltipPosition();
+      ctx.save();
+      ctx.font = '700 11px "Segoe UI","Hiragino Kaku Gothic ProN","Meiryo",sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(`${p.toFixed(0)}%`, pos.x, pos.y);
+      ctx.restore();
+    });
+  }
+};
+
+/* =====================================================================
+   ③ 比較モードの差分テーブルHTMLを作る
+      例）男性  A:65%  B:42%  差分:+23pt
+      ・各項目について A割合(%)・B割合(%)・差分(±pt) を並べる。
+      ・差分の符号で色分け（プラス=緑／マイナス=青）。
+   ===================================================================== */
+function ensureDiffStyle(){
+  if(document.getElementById('diff-table-style')) return;
+  const st = document.createElement('style');
+  st.id = 'diff-table-style';
+  st.textContent = `
+    .diff-table{width:100%;border-collapse:collapse;margin-top:14px;font-size:12.5px;}
+    .diff-table th,.diff-table td{padding:6px 10px;border-bottom:1px solid #eef3f0;text-align:right;}
+    .diff-table th{font-size:11px;color:#5c6b63;font-weight:700;background:#f6faf8;}
+    .diff-table td.item,.diff-table th.item{text-align:left;font-weight:600;color:#1b2a22;}
+    .diff-table td.a{color:#00702D;font-weight:700;}
+    .diff-table td.b{color:#0067B9;font-weight:700;}
+    .diff-pos{color:#00913A;font-weight:800;}
+    .diff-neg{color:#0067B9;font-weight:800;}
+    .diff-zero{color:#9aa8a1;font-weight:700;}
+  `;
+  document.head.appendChild(st);
+}
+function buildCompareDiffTable(sec, mA, mB){
+  ensureDiffStyle();
+  const a = countLabels(mA, sec.labels), b = countLabels(mB, sec.labels);
+  let rows = '';
+  sec.labels.forEach((lbl, i)=>{
+    const pa = mA.length ? (a[i].count / mA.length * 100) : 0;
+    const pb = mB.length ? (b[i].count / mB.length * 100) : 0;
+    const diff = pa - pb;
+    const sign = diff > 0 ? '+' : (diff < 0 ? '' : '±');
+    const cls  = diff > 0 ? 'diff-pos' : (diff < 0 ? 'diff-neg' : 'diff-zero');
+    rows += `<tr>
+      <td class="item">${lbl}</td>
+      <td class="a">${pa.toFixed(0)}%</td>
+      <td class="b">${pb.toFixed(0)}%</td>
+      <td class="${cls}">${sign}${Math.round(diff)}pt</td>
+    </tr>`;
+  });
+  return `<table class="diff-table">
+    <thead><tr><th class="item">項目</th><th>A</th><th>B</th><th>差分</th></tr></thead>
+    <tbody>${rows}</tbody></table>`;
+}
+
+/* =====================================================================
    単一ビュー用：1つの棒グラフを描画（mode対応）
    ===================================================================== */
 function drawBar(canvas, sec, members, mode, colorSet){
@@ -167,21 +346,26 @@ function drawBar(canvas, sec, members, mode, colorSet){
   const labels = items.map(i=>i.label);
   const values = items.map(i=>i.value);
   const tips   = items.map(i=>i.tip);
-  const [c1,c2] = colorSet;
   const isPct = (mode === 'percent');
+  /* ② グラフ内に出す数値ラベル（件数 or 割合%） */
+  const dlabels = items.map(i => isPct ? `${i.value}%` : `${i.count}`);
+  const [c1,c2] = colorSet;
   const ctx = canvas.getContext('2d');
   return new Chart(ctx,{
     type:'bar',
     data:{labels, datasets:[{
-      label:'該当', data:values, tips:tips, borderRadius:6, borderSkipped:false, maxBarThickness:38,
+      label:'該当', data:values, tips:tips, dlabels:dlabels,
+      borderRadius:6, borderSkipped:false, maxBarThickness:38,
       backgroundColor:(c)=>{
         const {ctx,chartArea}=c.chart; if(!chartArea) return c1;
         return cfg.horizontal ? gradH(ctx,chartArea,c1,c2) : gradV(ctx,chartArea,c1,c2);
       },
     }]},
+    plugins:[BarValueLabels],
     options:{
       indexAxis: cfg.horizontal ? 'y' : 'x',
       responsive:true, maintainAspectRatio:false, animation:{duration:350},
+      layout:{padding:{top:18, right:36}},   // ラベルがはみ出さないよう余白
       plugins:{legend:{display:false},
         tooltip:{backgroundColor:GREEN_DARK, padding:10,
           callbacks:{label:(c)=>' '+c.dataset.tips[c.dataIndex]}}},
@@ -230,6 +414,7 @@ function drawPie(canvas, sec, members, legendPos){
       data: counts, backgroundColor: colors,
       borderColor: '#fff', borderWidth: 2, hoverOffset: 6
     }]},
+    plugins: [PieValueLabels],   // ② スライス内に割合(%)を表示
     options: {
       responsive: true, maintainAspectRatio: false, cutout: '55%',
       animation: { duration: 400 },
